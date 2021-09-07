@@ -8,6 +8,8 @@
 #define AceBus_kBitPeriodMicros (1000000UL / AceBus_kBaud)
 #define AceBus_kInterFrameMicros (AceBus_kBitPeriodMicros * 15)
 
+typedef void (*AceBus_rxCallback)(tinframe_t *frame);
+
 enum {
   AceBus_kOK = 0,
   AceBus_kWriteBusy,
@@ -18,23 +20,24 @@ enum {
   AceBus_kReadCRCError,
   AceBus_kReadSequenceError,
   AceBus_kReadOverunError,
-  AceBus_kReadDataReady
+  AceBus_kReadDataReady,
+  AceBus_kReadComplete,
 };
 
 class AceBus {
 public:
-  AceBus(HardwareSerial &serial, unsigned char interruptPin);
+  AceBus(HardwareSerial &serial, unsigned char interruptPin,
+         AceBus_rxCallback callback);
   void begin();
   int update();
-  int write(tinframe_t* frame);
-  int read(tinframe_t* frame);
-  void setPriority(unsigned char priority);
+  int write(tinframe_t *frame);
+  // int read(tinframe_t* frame);
 
 private:
   HardwareSerial &serialPort;
   unsigned char rxInterruptPin;
+  AceBus_rxCallback rxCallback;
 
-  unsigned int txPriority;
   tinframe_t txFrame;
   unsigned char txIndex;
   tinframe_t rxFrame;

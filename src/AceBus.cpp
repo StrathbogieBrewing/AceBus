@@ -6,8 +6,8 @@
 #define kTXRequest (tinframe_kFrameSize + 1)
 #define kTXIdle (tinframe_kFrameSize + 2)
 
-AceBus::AceBus(HardwareSerial &serial, unsigned char interruptPin)
-    : serialPort{serial}, rxInterruptPin{interruptPin} {}
+AceBus::AceBus(HardwareSerial &serial, unsigned char interruptPin, AceBus_rxCallback callback)
+    : serialPort{serial}, rxInterruptPin{interruptPin}, rxCallback{callback} {}
 
 volatile unsigned long AceBus::rxActiveMicros = 0;
 
@@ -20,12 +20,6 @@ void AceBus::begin() {
                   CHANGE);
   rxIndex = kRXDone;
   txIndex = kTXIdle;
-  txPriority = 0;
-}
-
-void AceBus::setPriority(unsigned char priority) {
-  txPriority = AceBus_kInterFrameMicros +
-               ((unsigned int)(priority & 0x07) * AceBus_kBitPeriodMicros);
 }
 
 int AceBus::update() {
@@ -37,7 +31,13 @@ int AceBus::update() {
     while (serialPort.available() > 0) {
       serialPort.read();
     }
-    if (lastActivity > txPriority) {
+    unsigned int txPriority = AceBus_kInterFrameMicros;
+    unsigned char firstDataByte = txFrame.data[0];  // priority based on byte 0
+    while(firstDataByte){
+      txPriority += AceBus_kBitPeriodMicros;
+      firstDataByte <<= 1;
+    }
+    if ((lastActivity > txPriority) && (digitalRead(rxInterruptPin) == HIGH)){
       if (txIndex == kTXRequest) {
         txIndex = 0;
         unsigned char txData = ((char *)&txFrame)[txIndex];
@@ -47,6 +47,10 @@ int AceBus::update() {
         interrupts();
         return AceBus_kWriteBusy;
       } else {
+        if(txIndex != kTXIdle){
+          txIndex = kTXIdle;
+          return AceBus_kWriteTimeout;
+        }
         txIndex = kTXIdle;
       }
     }
@@ -81,11 +85,11 @@ int AceBus::update() {
       return AceBus_kReadOverunError;
     }
     if (rxIndex == tinframe_kFrameSize) {
+      rxIndex = kRXDone;
       if (tinframe_checkFrame(&rxFrame) == tinframe_kOK) {
-        rxIndex = kRXDataReady;
-        return AceBus_kReadDataReady;
+        rxCallback(&rxFrame);
+        return AceBus_kReadComplete;
       } else {
-        rxIndex = kRXDone;
         return AceBus_kReadCRCError;
       }
     }
@@ -103,11 +107,11 @@ int AceBus::write(tinframe_t *frame) {
   return AceBus_kOK;
 }
 
-int AceBus::read(tinframe_t *frame) {
-  if (rxIndex == kRXDataReady) {
-    memcpy(frame, &rxFrame, tinframe_kFrameSize);
-    rxIndex = kRXDone;
-    return AceBus_kOK;
-  }
-  return AceBus_kReadNoData;
-}
+// int AceBus::read(tinframe_t *frame) {
+//   if (rxIndex == kRXDataReady) {
+//     memcpy(frame, &rxFrame, tinframe_kFrameSize);
+//     rxIndex = kRXDone;
+//     return AceBus_kOK;
+//   }
+//   return AceBus_kReadNoData;
+// }
