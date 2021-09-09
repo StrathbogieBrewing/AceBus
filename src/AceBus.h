@@ -31,7 +31,6 @@ public:
   void begin();
   int update();
   int write(tinframe_t *frame);
-  // int read(tinframe_t* frame);
 
 private:
   HardwareSerial &serialPort;
