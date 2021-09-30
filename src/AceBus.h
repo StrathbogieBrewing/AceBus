@@ -2,6 +2,7 @@
 #define ACEBUS_H
 
 #include "Arduino.h"
+#include "AceBusError.h"
 #include "tinframe.h"
 
 #define AceBus_kBaud (1200UL)
@@ -9,20 +10,6 @@
 #define AceBus_kInterFrameMicros (AceBus_kBitPeriodMicros * 15)
 
 typedef void (*AceBus_rxCallback)(tinframe_t *frame);
-
-enum {
-  AceBus_kOK = 0,
-  AceBus_kWriteBusy,
-  AceBus_kWriteCollision,
-  AceBus_kWriteTimeout,
-  AceBus_kWriteComplete,
-  AceBus_kReadNoData,
-  AceBus_kReadCRCError,
-  AceBus_kReadSequenceError,
-  AceBus_kReadOverunError,
-  AceBus_kReadDataReady,
-  AceBus_kReadComplete,
-};
 
 class AceBus {
 public:
