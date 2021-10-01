@@ -67,8 +67,7 @@ int AceBus::update() {
           return AceBus_kWriteBusy;
         } else {
           txIndex = kTXIdle;
-          // return AceBus_kWriteComplete;
-          return AceBus_kOK;
+          return AceBus_kWriteComplete;
         }
       } else {
         txIndex = kTXIdle;
@@ -89,14 +88,12 @@ int AceBus::update() {
       rxIndex = kRXDone;
       if (tinframe_checkFrame(&rxFrame) == tinframe_kOK) {
         rxCallback(&rxFrame);
-        // return AceBus_kReadComplete;
         return AceBus_kOK;
       } else {
         return AceBus_kReadCRCError;
       }
     }
   }
-  // return AceBus_kReadNoData;
   return AceBus_kOK;
 }
 
@@ -109,12 +106,3 @@ int AceBus::write(tinframe_t *frame) {
   txIndex = kTXRequest;
   return AceBus_kOK;
 }
-
-// int AceBus::read(tinframe_t *frame) {
-//   if (rxIndex == kRXDataReady) {
-//     memcpy(frame, &rxFrame, tinframe_kFrameSize);
-//     rxIndex = kRXDone;
-//     return AceBus_kOK;
-//   }
-//   return AceBus_kReadNoData;
-// }
