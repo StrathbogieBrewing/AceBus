@@ -1,2 +1,2 @@
-# AceBus
-Simple UART based multiuser bus
+# TinBus
+Simple UART based multi-access bus
