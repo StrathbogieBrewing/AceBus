@@ -8,7 +8,13 @@
 #define getByte(base, offset) pgm_read_byte(base + offset)
 #endif
 
-#include "tinframe.h"
+#include "aceframe.h"
+
+// first byte of tin frame data is used to indicate frame start / prioirty
+// this will adjust the required bus silence period pre-transmit
+// the values below avoid corruption of the priority
+unsigned char aceframe_priority[] = {0x80, 0xC0, 0xE0, 0xF0,
+                                     0xF8, 0xFC, 0xFE, 0xFF};
 
 // CRC-8 uses DVB-S2 polynomial
 // ./pycrc.py --width 8 --poly 0xd5 --xor-in 0x00 --xor-out 0x00
@@ -38,34 +44,36 @@ static const unsigned char crc_table[256] PROGMEM = {
     0x84, 0x51, 0xfb, 0x2e, 0x7a, 0xaf, 0x05, 0xd0, 0xad, 0x78, 0xd2, 0x07,
     0x53, 0x86, 0x2c, 0xf9};
 
-unsigned char tinframe_crcByte(unsigned char crc, unsigned char data) {
+unsigned char aceframe_crcByte(unsigned char crc, unsigned char data) {
   unsigned char tbl_idx = crc ^ data;
   return getByte(crc_table, tbl_idx);
 }
 
-void tinframe_prepareFrame(tinframe_t *frame) {
+void aceframe_prepareFrame(aceframe_t *frame) {
   unsigned char crc = 0;
-  unsigned const char *data = (unsigned char *)frame + 1; // no crc on start
-  unsigned char bytes = tinframe_kFrameSize - 2;          // or on crc itself
-  while (bytes--) {
-    crc = tinframe_crcByte(crc, *data++);
+  unsigned char size =
+      frame->dataLength + aceframe_kFrameOverhead - sizeof(frame->crc);
+  unsigned char *frameBytes = (unsigned char *)frame;
+  while (size--) {
+    crc = aceframe_crcByte(crc, *frameBytes++);
   }
-  frame->crc = crc;                                       // set crc
-  frame->start = tinframe_kStart;                         // set start byte
+  *frameBytes++ = crc;
 }
 
-int tinframe_checkFrame(const tinframe_t *frame) {
-  if (frame->start != tinframe_kStart) {                  // test start byte
-    return tinframe_kCRCError;
-  };
+char aceframe_checkFrame(const aceframe_t *frame) {
   unsigned char crc = 0;
-  unsigned const char *data = (unsigned char *)frame + 1; // no crc on start
-  unsigned char bytes = tinframe_kFrameSize - 2;          // or on crc itself
-  while (bytes--) {
-    crc = tinframe_crcByte(crc, *data++);
+  unsigned char size =
+      frame->dataLength + aceframe_kFrameOverhead - sizeof(frame->crc);
+  unsigned const char *frameBytes = (unsigned char *)frame;
+  if (size > aceframe_kFrameSize - sizeof(frame->crc)) {
+    return aceframe_kFrameError;
   }
-  if (frame->crc != crc) {
-    return tinframe_kFrameError;
+  while (size--) {
+    crc = aceframe_crcByte(crc, *frameBytes++);
   }
-  return tinframe_kOK;
+
+  if (*frameBytes != crc) {
+    return aceframe_kCRCError;
+  }
+  return aceframe_kOK;
 }
