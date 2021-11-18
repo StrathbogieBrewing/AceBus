@@ -1,5 +1,5 @@
-#ifndef aceframe_H
-#define aceframe_H
+#ifndef ACEFRAME_H
+#define ACEFRAME_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,4 +28,4 @@ char aceframe_checkFrame(const aceframe_t *frame);
 } // extern "C"
 #endif
 
-#endif // aceframe_H
+#endif // ACEFRAME_H

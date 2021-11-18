@@ -1,11 +1,11 @@
-#include "TinBus.h"
+#include "AceBus.h"
 
 #define kRxInterruptPin (2)
 #define kBaudRate (1200L)
 #define kSerialPort (Serial1)
 void rxCallback(uint8_t *data, uint8_t length);
 
-TinBus tinBus(kSerialPort, kBaudRate, kRxInterruptPin, rxCallback);
+AceBus aceBus(kSerialPort, kBaudRate, kRxInterruptPin, rxCallback);
 
 void hexDump(char *tag, uint8_t *buffer, int size) {
   int i = 0;
@@ -20,7 +20,7 @@ void hexDump(char *tag, uint8_t *buffer, int size) {
 }
 
 void setup() {
-  tinBus.begin();
+  aceBus.begin();
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
 }
@@ -28,7 +28,7 @@ void setup() {
 void loop() {
   static unsigned long secondsTimer = 0;
 
-  tinBus.update();
+  aceBus.update();
 
   unsigned long m = millis();
   if(m - secondsTimer > 1000L){  // send message once per second
@@ -37,7 +37,7 @@ void loop() {
 
     uint8_t data[] = "Hello World!";
     uint8_t length = strlen(data);
-    tinBus.write(data, length, MEDIUM_PRIORITY);
+    aceBus.write(data, length, MEDIUM_PRIORITY);
     hexDump("Send : ", data, length);
   }
 }

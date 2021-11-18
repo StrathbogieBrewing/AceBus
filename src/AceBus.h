@@ -1,5 +1,5 @@
-#ifndef AceBus_H
-#define AceBus_H
+#ifndef ACEBUS_H
+#define ACEBUS_H
 
 #include "Arduino.h"
 #include "AceBusError.h"
@@ -35,4 +35,4 @@ private:
   static volatile unsigned long rxActiveMicros;
 };
 
-#endif //  AceBus_H
+#endif //  ACEBUS_H
